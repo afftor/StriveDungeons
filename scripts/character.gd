@@ -1,7 +1,7 @@
 extends Reference
 class_name Character
 
-const DEFAULT_HP = 20
+const DEFAULT_HP = 1000
 const DEFAULT_DAMAGE = 10
 const DEFAULT_SPEED = 1
 const DEFAULT_HIT_CHANCE = 0.75
@@ -30,14 +30,14 @@ func _init(config = {}):
 	hit_chance = config.get("hit_chance", DEFAULT_HIT_CHANCE)
 
 func is_alive() -> bool:
-		return hp > 0
+	return hp > 0
 
 func set_position(grid_position: Vector2) -> void:
 	position = grid_position
 
 func take_damage(amount: float) -> bool:
 	if amount <= 0:
-			return false
+		return false
 	hp = max(0, hp - amount)
 	return not is_alive()
 

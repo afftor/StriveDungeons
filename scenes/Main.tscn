@@ -27,14 +27,14 @@ margin_right = -16.0
 margin_bottom = 40.0
 rect_min_size = Vector2( 0, 24 )
 
-[node name="HealthBarLayer" type="Control" parent="TurnCanvas"]
-script = ExtResource( 4 )
-
 [node name="TurnProgress" type="ProgressBar" parent="TurnCanvas/TurnBarContainer"]
 anchor_right = 1.0
 anchor_bottom = 1.0
 max_value = 1.0
 percent_visible = false
+
+[node name="HealthBarLayer" type="Control" parent="TurnCanvas"]
+script = ExtResource( 4 )
 
 [node name="CombatLogPanel" type="Panel" parent="TurnCanvas"]
 anchor_top = 1.0

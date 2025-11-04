@@ -34,29 +34,29 @@ var turn_order = []
 var next_character_id = 0
 
 func _ready():
-                randomize()
-                _setup_input_actions()
-                _create_turn_timer()
-                _spawn_initial_characters()
-                if health_bar_layer != null:
-                                health_bar_layer.set_hex_grid(hex_grid)
-                                health_bar_layer.refresh_from_grid()
-                set_process(true)
+	randomize()
+	_setup_input_actions()
+	_create_turn_timer()
+	_spawn_initial_characters()
+	if health_bar_layer != null:
+		health_bar_layer.set_hex_grid(hex_grid)
+		health_bar_layer.refresh_from_grid()
+	set_process(true)
 
 func _process(delta):
-		if turn_timer == null or turn_progress_bar == null:
-				return
-		if turn_timer.time_left > 0:
-				var progress = (turn_timer.wait_time - turn_timer.time_left) / turn_timer.wait_time
-				turn_progress_bar.value = clamp(progress, 0.0, 1.0)
+	if turn_timer == null or turn_progress_bar == null:
+		return
+	if turn_timer.time_left > 0:
+		var progress = (turn_timer.wait_time - turn_timer.time_left) / turn_timer.wait_time
+		turn_progress_bar.value = clamp(progress, 0.0, 1.0)
 
 func _create_turn_timer():
-		turn_timer = Timer.new()
-		turn_timer.wait_time = TURN_DURATION
-		turn_timer.one_shot = false
-		turn_timer.autostart = true
-		add_child(turn_timer)
-		turn_timer.connect("timeout", self, "_on_turn_timer_timeout")
+	turn_timer = Timer.new()
+	turn_timer.wait_time = TURN_DURATION
+	turn_timer.one_shot = false
+	turn_timer.autostart = true
+	add_child(turn_timer)
+	turn_timer.connect("timeout", self, "_on_turn_timer_timeout")
 
 func _on_turn_timer_timeout():
 		if turn_progress_bar != null:
@@ -106,38 +106,38 @@ func _process_turn_cycle():
 		_cleanup_defeated_characters()
 
 func _perform_character_turn(character):
-        var current_position = hex_grid.get_character_position(character.id)
-        if current_position == null:
-                return
-        var target_info = _find_nearest_enemy_with_path(character)
-        if target_info == null:
-                return
-        var target = target_info["enemy"]
-        var target_position = target_info["target_position"]
-        if target == null or target_position == null:
-                return
-        var distance = hex_grid.get_hex_distance(current_position.x, current_position.y, target_position.x, target_position.y)
-        if distance <= 1:
-                _resolve_attack(character, target)
-                return
-        var path_to_target = target_info["path"]
-        if path_to_target == null or path_to_target.size() <= 1:
-                return
-        var steps_remaining = max(1, int(character.speed))
-        var path_index = 1
-        while path_index < path_to_target.size() and steps_remaining > 0:
-                var step = path_to_target[path_index]
-                if hex_grid.move_character(character.id, step.x, step.y):
-                        steps_remaining -= 1
-                        path_index += 1
-                else:
-                        break
-        target_position = hex_grid.get_character_position(target.id)
-        current_position = hex_grid.get_character_position(character.id)
-        if target_position != null and current_position != null:
-                var new_distance = hex_grid.get_hex_distance(current_position.x, current_position.y, target_position.x, target_position.y)
-                if new_distance <= 1:
-                        _resolve_attack(character, target)
+	var current_position = hex_grid.get_character_position(character.id)
+	if current_position == null:
+			return
+	var target_info = _find_nearest_enemy_with_path(character)
+	if target_info == null:
+			return
+	var target = target_info["enemy"]
+	var target_position = target_info["target_position"]
+	if target == null or target_position == null:
+			return
+	var distance = hex_grid.get_hex_distance(current_position.x, current_position.y, target_position.x, target_position.y)
+	if distance <= 1:
+			_resolve_attack(character, target)
+			return
+	var path_to_target = target_info["path"]
+	if path_to_target == null or path_to_target.size() <= 1:
+			return
+	var steps_remaining = max(1, int(character.speed))
+	var path_index = 1
+	while path_index < path_to_target.size() and steps_remaining > 0:
+			var step = path_to_target[path_index]
+			if hex_grid.move_character(character.id, step.x, step.y):
+					steps_remaining -= 1
+					path_index += 1
+			else:
+					break
+	target_position = hex_grid.get_character_position(target.id)
+	current_position = hex_grid.get_character_position(character.id)
+	if target_position != null and current_position != null:
+			var new_distance = hex_grid.get_hex_distance(current_position.x, current_position.y, target_position.x, target_position.y)
+			if new_distance <= 1:
+					_resolve_attack(character, target)
 
 func _resolve_attack(attacker, defender):
 	if defender == null or attacker == null:
@@ -163,75 +163,75 @@ func _resolve_attack(attacker, defender):
 		hex_grid.update()
 
 func _cleanup_defeated_characters():
-        for character_id in hex_grid.get_character_ids():
-                var character = hex_grid.get_character(character_id)
-                if character == null:
-                        continue
-                if not character.is_alive():
-                        hex_grid.remove_character(character_id)
-                        turn_order.erase(character_id)
-        if health_bar_layer != null:
-                health_bar_layer.refresh_from_grid()
+	for character_id in hex_grid.get_character_ids():
+		var character = hex_grid.get_character(character_id)
+		if character == null:
+			continue
+		if not character.is_alive():
+			hex_grid.remove_character(character_id)
+			turn_order.erase(character_id)
+	if health_bar_layer != null:
+		health_bar_layer.refresh_from_grid()
 
 func _find_nearest_enemy_with_path(character):
-        var character_position = hex_grid.get_character_position(character.id)
-        if character_position == null:
-                return null
-        var best_enemy = null
-        var best_path = []
-        var best_moves = INF
-        var best_target_position = null
-        for candidate_id in hex_grid.get_character_ids():
-                var candidate = hex_grid.get_character(candidate_id)
-                if candidate == null or candidate == character:
-                                continue
-                if not character.is_hostile_to(candidate):
-                                continue
-                if not candidate.is_alive():
-                                continue
-                var candidate_position = hex_grid.get_character_position(candidate_id)
-                if candidate_position == null:
-                                continue
-                var path = hex_grid.find_path_to_adjacent(character.id, character_position, candidate_position)
-                if path.empty():
-                        if hex_grid.get_hex_distance(character_position.x, character_position.y, candidate_position.x, candidate_position.y) > 1:
-                                continue
-                        path = [Vector2(int(character_position.x), int(character_position.y))]
-                var moves_required = max(0, path.size() - 1)
-                if moves_required < best_moves:
-                        best_moves = moves_required
-                        best_enemy = candidate
-                        best_path = path
-                        best_target_position = candidate_position
-                elif moves_required == best_moves and best_target_position != null:
-                        var current_distance = hex_grid.get_hex_distance(character_position.x, character_position.y, candidate_position.x, candidate_position.y)
-                        var best_distance = hex_grid.get_hex_distance(character_position.x, character_position.y, best_target_position.x, best_target_position.y)
-                        if current_distance < best_distance:
-                                best_enemy = candidate
-                                best_path = path
-                                best_target_position = candidate_position
-        if best_enemy == null:
-                return null
-        return {
-                "enemy": best_enemy,
-                "path": best_path,
-                "target_position": best_target_position
-        }
+	var character_position = hex_grid.get_character_position(character.id)
+	if character_position == null:
+			return null
+	var best_enemy = null
+	var best_path = []
+	var best_moves = INF
+	var best_target_position = null
+	for candidate_id in hex_grid.get_character_ids():
+		var candidate = hex_grid.get_character(candidate_id)
+		if candidate == null or candidate == character:
+						continue
+		if not character.is_hostile_to(candidate):
+						continue
+		if not candidate.is_alive():
+						continue
+		var candidate_position = hex_grid.get_character_position(candidate_id)
+		if candidate_position == null:
+						continue
+		var path = hex_grid.find_path_to_adjacent(character.id, character_position, candidate_position)
+		if path.empty():
+				if hex_grid.get_hex_distance(character_position.x, character_position.y, candidate_position.x, candidate_position.y) > 1:
+						continue
+				path = [Vector2(int(character_position.x), int(character_position.y))]
+		var moves_required = max(0, path.size() - 1)
+		if moves_required < best_moves:
+				best_moves = moves_required
+				best_enemy = candidate
+				best_path = path
+				best_target_position = candidate_position
+		elif moves_required == best_moves and best_target_position != null:
+				var current_distance = hex_grid.get_hex_distance(character_position.x, character_position.y, candidate_position.x, candidate_position.y)
+				var best_distance = hex_grid.get_hex_distance(character_position.x, character_position.y, best_target_position.x, best_target_position.y)
+				if current_distance < best_distance:
+						best_enemy = candidate
+						best_path = path
+						best_target_position = candidate_position
+	if best_enemy == null:
+			return null
+	return {
+			"enemy": best_enemy,
+			"path": best_path,
+			"target_position": best_target_position
+	}
 
 func _spawn_initial_characters():
-        var existing_positions = []
-        var player_positions = _generate_spawn_positions(2, existing_positions)
-        existing_positions += player_positions
-        var enemy_positions = _generate_spawn_positions(2, existing_positions)
+	var existing_positions = []
+	var player_positions = _generate_spawn_positions(2, existing_positions)
+	existing_positions += player_positions
+	var enemy_positions = _generate_spawn_positions(7, existing_positions)
 	existing_positions += enemy_positions
 	for index in range(player_positions.size()):
 		var character = _create_character(PLAYER_FACTION, "Player %d" % (index + 1), PLAYER_SPRITES[index % PLAYER_SPRITES.size()])
 		_place_character(character, player_positions[index])
 	for index in range(enemy_positions.size()):
-                var character = _create_character(ENEMY_FACTION, "Enemy %d" % (index + 1), ENEMY_SPRITES[index % ENEMY_SPRITES.size()])
-                _place_character(character, enemy_positions[index])
-        if health_bar_layer != null:
-                health_bar_layer.refresh_from_grid()
+		var character = _create_character(ENEMY_FACTION, "Enemy %d" % (index + 1), ENEMY_SPRITES[index % ENEMY_SPRITES.size()])
+		_place_character(character, enemy_positions[index])
+		if health_bar_layer != null:
+			health_bar_layer.refresh_from_grid()
 
 func _generate_spawn_positions(count, existing_positions):
 	var attempts = 0
