@@ -13,3 +13,22 @@ script = ExtResource( 2 )
 [node name="Main@Camera2D" type="Camera2D" parent="."]
 current = true
 script = ExtResource( 3 )
+
+[node name="TurnCanvas" type="CanvasLayer" parent="."]
+
+[node name="TurnBarContainer" type="Control" parent="TurnCanvas"]
+anchor_right = 1.0
+anchor_bottom = 0.0
+margin_left = 16.0
+margin_top = 16.0
+margin_bottom = 40.0
+margin_right = -16.0
+rect_min_size = Vector2( 0, 24 )
+
+[node name="TurnProgress" type="ProgressBar" parent="TurnCanvas/TurnBarContainer"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+min_value = 0.0
+max_value = 1.0
+value = 0.0
+percent_visible = false

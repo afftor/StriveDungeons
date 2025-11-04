@@ -5,10 +5,29 @@ const GRID_HEIGHT = 30
 const CELL_RADIUS = 24.0
 const SQRT3 = 1.73205080757
 
+const NEIGHBOR_OFFSETS_EVEN = [
+        Vector2(1, 0),
+        Vector2(0, -1),
+        Vector2(-1, -1),
+        Vector2(-1, 0),
+        Vector2(-1, 1),
+        Vector2(0, 1)
+]
+
+const NEIGHBOR_OFFSETS_ODD = [
+        Vector2(1, 0),
+        Vector2(1, -1),
+        Vector2(0, -1),
+        Vector2(-1, 0),
+        Vector2(0, 1),
+        Vector2(1, 1)
+]
+
 var show_grid_lines = true
 var grid_origin = Vector2.ZERO
 var cells = []
 var characters = {}
+var character_positions = {}
 
 func _ready():
 	_build_cells()
@@ -114,41 +133,55 @@ func can_place_character(column_index, row_index):
 		return false
 	return true
 
-func spawn_character(character_id, column_index, row_index):
-	if not can_place_character(column_index, row_index):
-		return false
-	var cell = get_cell(column_index, row_index)
-	cell["character"] = character_id
-	characters[character_id] = Vector2(column_index, row_index)
-	update()
-	return true
+func spawn_character(character, column_index, row_index):
+        if not can_place_character(column_index, row_index):
+                return false
+        if character == null:
+                return false
+        var cell = get_cell(column_index, row_index)
+        var character_id = character.id
+        if character_id == "":
+                return false
+        if characters.has(character_id):
+                return false
+        cell["character"] = character_id
+        characters[character_id] = character
+        character_positions[character_id] = Vector2(column_index, row_index)
+        character.set_position(Vector2(column_index, row_index))
+        update()
+        return true
 
 func move_character(character_id, new_column, new_row):
-	if not characters.has(character_id):
-		return false
-	if not can_place_character(new_column, new_row):
-		return false
-	var current_position = characters[character_id]
-	var current_cell = get_cell(current_position.x, current_position.y)
-	var target_cell = get_cell(new_column, new_row)
-	if current_cell == null or target_cell == null:
-		return false
-	current_cell["character"] = null
-	target_cell["character"] = character_id
-	characters[character_id] = Vector2(new_column, new_row)
-	update()
-	return true
+        if not characters.has(character_id):
+                return false
+        if not can_place_character(new_column, new_row):
+                return false
+        var current_position = character_positions[character_id]
+        var current_cell = get_cell(current_position.x, current_position.y)
+        var target_cell = get_cell(new_column, new_row)
+        if current_cell == null or target_cell == null:
+                return false
+        current_cell["character"] = null
+        target_cell["character"] = character_id
+        character_positions[character_id] = Vector2(new_column, new_row)
+        var character = characters[character_id]
+        if character != null:
+                character.set_position(Vector2(new_column, new_row))
+        update()
+        return true
 
 func remove_character(character_id):
-	if not characters.has(character_id):
-		return false
-	var position = characters[character_id]
-	var cell = get_cell(position.x, position.y)
-	if cell != null:
-		cell["character"] = null
-	characters.erase(character_id)
-	update()
-	return true
+        if not characters.has(character_id):
+                return false
+        var position = character_positions.get(character_id, null)
+        if position != null:
+                var cell = get_cell(position.x, position.y)
+                if cell != null:
+                        cell["character"] = null
+        characters.erase(character_id)
+        character_positions.erase(character_id)
+        update()
+        return true
 
 func set_impassable(column_index, row_index, value = true):
 	var cell = get_cell(column_index, row_index)
@@ -175,7 +208,69 @@ func clear_cell_effects(column_index, row_index):
 	return true
 
 func get_cell_effects(column_index, row_index):
-	var cell = get_cell(column_index, row_index)
-	if cell == null:
-		return []
-	return cell["effects"].duplicate()
+        var cell = get_cell(column_index, row_index)
+        if cell == null:
+                return []
+        return cell["effects"].duplicate()
+
+func get_character(character_id):
+        if not characters.has(character_id):
+                return null
+        return characters[character_id]
+
+func get_character_ids():
+        return characters.keys()
+
+func get_character_position(character_id):
+        return character_positions.get(character_id, null)
+
+func get_character_at(column_index, row_index):
+        var cell = get_cell(column_index, row_index)
+        if cell == null:
+                return null
+        var character_id = cell["character"]
+        if character_id == null:
+                return null
+        return get_character(character_id)
+
+func is_cell_occupied(column_index, row_index):
+        var cell = get_cell(column_index, row_index)
+        if cell == null:
+                return false
+        return cell["character"] != null
+
+func get_neighbor_coordinates(column_index, row_index):
+        var neighbors = []
+        var offsets = NEIGHBOR_OFFSETS_EVEN
+        if int(row_index) % 2 != 0:
+                offsets = NEIGHBOR_OFFSETS_ODD
+        for offset in offsets:
+                var neighbor_column = column_index + int(offset.x)
+                var neighbor_row = row_index + int(offset.y)
+                if is_in_bounds(neighbor_column, neighbor_row):
+                        neighbors.append(Vector2(neighbor_column, neighbor_row))
+        return neighbors
+
+func get_hex_distance(column_a, row_a, column_b, row_b):
+        var cube_a = _offset_to_cube(column_a, row_a)
+        var cube_b = _offset_to_cube(column_b, row_b)
+        return int((abs(cube_a.x - cube_b.x) + abs(cube_a.y - cube_b.y) + abs(cube_a.z - cube_b.z)) / 2)
+
+func get_step_towards(column_a, row_a, column_b, row_b):
+        var current_distance = get_hex_distance(column_a, row_a, column_b, row_b)
+        var best_step = null
+        var best_distance = current_distance
+        for neighbor in get_neighbor_coordinates(column_a, row_a):
+                if is_cell_occupied(neighbor.x, neighbor.y):
+                        continue
+                var neighbor_distance = get_hex_distance(neighbor.x, neighbor.y, column_b, row_b)
+                if neighbor_distance < best_distance:
+                        best_distance = neighbor_distance
+                        best_step = neighbor
+        return best_step
+
+func _offset_to_cube(column_index, row_index):
+        var x = column_index - int((row_index - (row_index & 1)) / 2)
+        var z = row_index
+        var y = -x - z
+        return Vector3(x, y, z)
