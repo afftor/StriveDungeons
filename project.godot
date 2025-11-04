@@ -1,0 +1,31 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:  https://docs.godotengine.org/en/stable/classes/class_projectsettings.html#class-projectsettings-property-list
+
+config_version=4
+
+[application]
+
+config/name="StriveDungeons"
+run/main_scene="res://scenes/Main.tscn"
+
+[display]
+
+window/size/width=1280
+window/size/height=720
+window/stretch/mode="2d"
+window/stretch/aspect="keep"
+
+[input]
+
+toggle_grid={"deadzone":0.5,"events":[{"type":"InputEventKey","scancode":71,"unicode":0,"echo":false,"press":true}]}
+move_up={"deadzone":0.5,"events":[{"type":"InputEventKey","scancode":87,"unicode":0,"echo":false,"press":true}]}
+move_down={"deadzone":0.5,"events":[{"type":"InputEventKey","scancode":83,"unicode":0,"echo":false,"press":true}]}
+move_left={"deadzone":0.5,"events":[{"type":"InputEventKey","scancode":65,"unicode":0,"echo":false,"press":true}]}
+move_right={"deadzone":0.5,"events":[{"type":"InputEventKey","scancode":68,"unicode":0,"echo":false,"press":true}]}
+
+[rendering]
+
+environment/default_clear_color=Color( 0, 0, 0, 1 )
