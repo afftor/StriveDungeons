@@ -78,16 +78,16 @@ func _draw():
 			if show_grid_lines:
 				var outline = _build_cell_outline(center)
 				draw_polyline(outline, Color(0.32, 0.40, 0.46), 1.2)
-                        if cell["character"] != null:
-                                var character_color = Color(0.85, 0.85, 0.35)
-                                var character_id = cell["character"]
-                                if character_id != null and characters.has(character_id):
-                                        var character = characters[character_id]
-                                        if character.faction == "player":
-                                                character_color = Color(0.35, 0.85, 0.45)
-                                        elif character.faction == "enemy":
-                                                character_color = Color(0.9, 0.3, 0.3)
-                                draw_circle(center, CELL_RADIUS * 0.35, character_color)
+				if cell["character"] != null:
+					var character_color = Color(0.85, 0.85, 0.35)
+					var character_id = cell["character"]
+					if character_id != null and characters.has(character_id):
+							var character = characters[character_id]
+							if character.faction == "player":
+									character_color = Color(0.35, 0.85, 0.45)
+							elif character.faction == "enemy":
+									character_color = Color(0.9, 0.3, 0.3)
+					draw_circle(center, CELL_RADIUS * 0.35, character_color)
 
 func _build_cell_polygon(center):
 	var points = PoolVector2Array()
@@ -107,10 +107,10 @@ func _hex_corner(index):
 	return Vector2(cos(angle), sin(angle)) * CELL_RADIUS
 
 func _axial_to_world(column_index, row_index):
-        return _axial_to_pixel(column_index, row_index) + grid_origin
+		return _axial_to_pixel(column_index, row_index) + grid_origin
 
 func _axial_to_pixel(column_index, row_index):
-		var row_offset = float(row_index % 2) * (SQRT3 * 0.5)
+		var row_offset = float(int(row_index) % 2) * (SQRT3 * 0.5)
 		var x = CELL_RADIUS * (SQRT3 * column_index + row_offset)
 		var y = CELL_RADIUS * (1.5 * row_index)
 		return Vector2(x, y)
@@ -265,23 +265,23 @@ func get_hex_distance(column_a, row_a, column_b, row_b):
 		return int((abs(cube_a.x - cube_b.x) + abs(cube_a.y - cube_b.y) + abs(cube_a.z - cube_b.z)) / 2)
 
 func get_step_towards(column_a, row_a, column_b, row_b):
-                var current_distance = get_hex_distance(column_a, row_a, column_b, row_b)
-                var best_step = null
-                var best_distance = current_distance
-                for neighbor in get_neighbor_coordinates(column_a, row_a):
-                                if is_cell_occupied(neighbor.x, neighbor.y):
-                                                continue
-                                var neighbor_distance = get_hex_distance(neighbor.x, neighbor.y, column_b, row_b)
-                                if neighbor_distance < best_distance:
-                                                best_distance = neighbor_distance
-                                                best_step = neighbor
-                return best_step
+				var current_distance = get_hex_distance(column_a, row_a, column_b, row_b)
+				var best_step = null
+				var best_distance = current_distance
+				for neighbor in get_neighbor_coordinates(column_a, row_a):
+								if is_cell_occupied(neighbor.x, neighbor.y):
+												continue
+								var neighbor_distance = get_hex_distance(neighbor.x, neighbor.y, column_b, row_b)
+								if neighbor_distance < best_distance:
+												best_distance = neighbor_distance
+												best_step = neighbor
+				return best_step
 
 func _offset_to_cube(column_index, row_index):
-                var x = column_index - int((row_index - (int(row_index) & 1)) / 2)
-                var z = row_index
-                var y = -x - z
-                return Vector3(x, y, z)
+				var x = column_index - int((row_index - (int(row_index) & 1)) / 2)
+				var z = row_index
+				var y = -x - z
+				return Vector3(x, y, z)
 
 func get_world_position(column_index, row_index):
-                return _axial_to_world(column_index, row_index)
+				return _axial_to_world(column_index, row_index)

@@ -136,32 +136,32 @@ func _perform_character_turn(character):
 						_resolve_attack(character, target)
 
 func _resolve_attack(attacker, defender):
-                if defender == null or attacker == null:
-                                return
-                var result = attacker.attack(defender)
-                var defender_position = hex_grid.get_character_position(defender.id)
-                if result.hit:
-                                var damage_value = int(round(result.damage))
-                                if defender_position != null:
-                                                _show_floating_text(defender_position, "-%d" % damage_value, Color(0.9, 0.2, 0.2))
-                                _log_combat_event("%s hits %s for %d damage." % [attacker.name, defender.name, damage_value])
-                else:
-                                if defender_position != null:
-                                                _show_floating_text(defender_position, "Dodge!", Color(0.6, 0.8, 1.0))
-                                _log_combat_event("%s misses %s." % [attacker.name, defender.name])
-                if result.get("target_defeated", false):
-                                hex_grid.remove_character(defender.id)
-                                turn_order.erase(defender.id)
-                                _log_combat_event("%s is defeated." % defender.name)
+				if defender == null or attacker == null:
+								return
+				var result = attacker.attack(defender)
+				var defender_position = hex_grid.get_character_position(defender.id)
+				if result.hit:
+								var damage_value = int(round(result.damage))
+								if defender_position != null:
+												_show_floating_text(defender_position, "-%d" % damage_value, Color(0.9, 0.2, 0.2))
+								_log_combat_event("%s hits %s for %d damage." % [attacker.name, defender.name, damage_value])
+				else:
+								if defender_position != null:
+												_show_floating_text(defender_position, "Dodge!", Color(0.6, 0.8, 1.0))
+								_log_combat_event("%s misses %s." % [attacker.name, defender.name])
+				if result.get("target_defeated", false):
+								hex_grid.remove_character(defender.id)
+								turn_order.erase(defender.id)
+								_log_combat_event("%s is defeated." % defender.name)
 
 func _cleanup_defeated_characters():
-                for character_id in hex_grid.get_character_ids():
-                                var character = hex_grid.get_character(character_id)
-				if character == null:
-						continue
-				if not character.is_alive():
-						hex_grid.remove_character(character_id)
-						turn_order.erase(character_id)
+				for character_id in hex_grid.get_character_ids():
+					var character = hex_grid.get_character(character_id)
+					if character == null:
+							continue
+					if not character.is_alive():
+							hex_grid.remove_character(character_id)
+							turn_order.erase(character_id)
 
 func _find_nearest_enemy(character):
 		var character_position = hex_grid.get_character_position(character.id)
@@ -187,81 +187,81 @@ func _find_nearest_enemy(character):
 		return nearest
 
 func _spawn_initial_characters():
-                var existing_positions = []
-                var player_positions = _generate_spawn_positions(2, existing_positions)
-                existing_positions += player_positions
-                var enemy_positions = _generate_spawn_positions(2, existing_positions)
-                existing_positions += enemy_positions
-                for index in range(player_positions.size()):
-                                var character = _create_character(PLAYER_FACTION, "Player %d" % (index + 1), PLAYER_SPRITES[index % PLAYER_SPRITES.size()])
-                                _place_character(character, player_positions[index])
-                for index in range(enemy_positions.size()):
-                                var character = _create_character(ENEMY_FACTION, "Enemy %d" % (index + 1), ENEMY_SPRITES[index % ENEMY_SPRITES.size()])
-                                _place_character(character, enemy_positions[index])
+				var existing_positions = []
+				var player_positions = _generate_spawn_positions(2, existing_positions)
+				existing_positions += player_positions
+				var enemy_positions = _generate_spawn_positions(2, existing_positions)
+				existing_positions += enemy_positions
+				for index in range(player_positions.size()):
+								var character = _create_character(PLAYER_FACTION, "Player %d" % (index + 1), PLAYER_SPRITES[index % PLAYER_SPRITES.size()])
+								_place_character(character, player_positions[index])
+				for index in range(enemy_positions.size()):
+								var character = _create_character(ENEMY_FACTION, "Enemy %d" % (index + 1), ENEMY_SPRITES[index % ENEMY_SPRITES.size()])
+								_place_character(character, enemy_positions[index])
 
 func _generate_spawn_positions(count, existing_positions):
-                var attempts = 0
-                while attempts < 1000:
-                                var positions = []
-                                var used = existing_positions.duplicate()
-                                var success = true
-                                for _i in range(count):
-                                                var candidate = _find_spawn_position(used)
-                                                if candidate == null:
-                                                                success = false
-                                                                break
-                                                positions.append(candidate)
-                                                used.append(candidate)
-                                if success:
-                                                return positions
-                                attempts += 1
-                push_error("Failed to generate spawn positions with required spacing.")
-                return []
+				var attempts = 0
+				while attempts < 1000:
+								var positions = []
+								var used = existing_positions.duplicate()
+								var success = true
+								for _i in range(count):
+												var candidate = _find_spawn_position(used)
+												if candidate == null:
+																success = false
+																break
+												positions.append(candidate)
+												used.append(candidate)
+								if success:
+												return positions
+								attempts += 1
+				push_error("Failed to generate spawn positions with required spacing.")
+				return []
 
 func _find_spawn_position(used_positions):
-                for _i in range(500):
-                                var column = randi() % hex_grid.GRID_WIDTH
-                                var row = randi() % hex_grid.GRID_HEIGHT
-                                if not hex_grid.can_place_character(column, row):
-                                                continue
-                                if not _is_spawn_position_valid(column, row, used_positions):
-                                                continue
-                                return Vector2(column, row)
-                return null
+				for _i in range(500):
+								var column = randi() % hex_grid.GRID_WIDTH
+								var row = randi() % hex_grid.GRID_HEIGHT
+								if not hex_grid.can_place_character(column, row):
+												continue
+								if not _is_spawn_position_valid(column, row, used_positions):
+												continue
+								return Vector2(column, row)
+				return null
 
 func _is_spawn_position_valid(column, row, used_positions):
-                if used_positions.empty():
-                                return true
-                for other in used_positions:
-                                var distance = hex_grid.get_hex_distance(column, row, other.x, other.y)
-                                if distance < MIN_SPAWN_DISTANCE or distance > MAX_SPAWN_DISTANCE:
-                                                return false
-                return true
+				if used_positions.empty():
+								return true
+				for other in used_positions:
+								var distance = hex_grid.get_hex_distance(column, row, other.x, other.y)
+								if distance < MIN_SPAWN_DISTANCE or distance > MAX_SPAWN_DISTANCE:
+												return false
+				return true
 
 func _place_character(character, position):
-                if character == null:
-                                return
-                if hex_grid.spawn_character(character, position.x, position.y):
-                                turn_order.append(character.id)
+				if character == null:
+								return
+				if hex_grid.spawn_character(character, position.x, position.y):
+								turn_order.append(character.id)
 
 func _show_floating_text(grid_position, text, color):
-                if floating_text_container == null or hex_grid == null:
-                                return
-                var world_position = hex_grid.get_world_position(grid_position.x, grid_position.y)
-                var floating_text = FloatingText.new()
-                floating_text.setup(text, color)
-                floating_text.position = world_position
-                floating_text_container.add_child(floating_text)
+				if floating_text_container == null or hex_grid == null:
+								return
+				var world_position = hex_grid.get_world_position(grid_position.x, grid_position.y)
+				var floating_text = FloatingText.new()
+				floating_text.setup(text, color)
+				floating_text.position = world_position
+				floating_text_container.add_child(floating_text)
 
 func _log_combat_event(message):
-                if combat_log == null:
-                                return
-                combat_log_entries.append(message)
-                if combat_log_entries.size() > MAX_LOG_ENTRIES:
-                                combat_log_entries.remove(0)
-                combat_log.clear()
-                for entry in combat_log_entries:
-                                combat_log.append_bbcode(entry + "\n")
+				if combat_log == null:
+								return
+				combat_log_entries.append(message)
+				if combat_log_entries.size() > MAX_LOG_ENTRIES:
+								combat_log_entries.remove(0)
+				combat_log.clear()
+				for entry in combat_log_entries:
+								combat_log.append_bbcode(entry + "\n")
 
 func _create_character(faction, name, sprite_path):
 		var character = CharacterClass.new({

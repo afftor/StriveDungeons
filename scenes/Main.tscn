@@ -33,12 +33,12 @@ max_value = 1.0
 percent_visible = false
 
 [node name="CombatLogPanel" type="Panel" parent="TurnCanvas"]
+anchor_top = 1.0
+anchor_bottom = 1.0
 margin_left = 16.0
 margin_top = -220.0
 margin_right = 256.0
 margin_bottom = -16.0
-anchor_top = 1.0
-anchor_bottom = 1.0
 rect_min_size = Vector2( 240, 200 )
 
 [node name="CombatLog" type="RichTextLabel" parent="TurnCanvas/CombatLogPanel"]
@@ -50,4 +50,3 @@ margin_right = -8.0
 margin_bottom = -8.0
 bbcode_enabled = true
 scroll_following = true
-scroll_active = true
