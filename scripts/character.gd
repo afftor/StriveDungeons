@@ -47,18 +47,20 @@ func roll_damage() -> float:
 		return rand_range(min_damage, max_damage)
 
 func attack(target: Character) -> Dictionary:
-		var result = {
-				"hit": false,
-				"damage": 0.0,
-				"target_defeated": false
-		}
-		if target == null or not target.is_alive():
-				return result
-		if randf() <= hit_chance:
-				result.hit = true
-				result.damage = roll_damage()
-				result.target_defeated = target.take_damage(result.damage)
-		return result
+                var result = {
+                                "hit": false,
+                                "damage": 0.0,
+                                "target_defeated": false
+                }
+                if target == null or not target.is_alive():
+                                return result
+                if not is_hostile_to(target):
+                                return result
+                if randf() <= hit_chance:
+                                result.hit = true
+                                result.damage = roll_damage()
+                                result.target_defeated = target.take_damage(result.damage)
+                return result
 
 func is_hostile_to(other: Character) -> bool:
 		if other == null:
