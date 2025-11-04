@@ -83,9 +83,10 @@ func _axial_to_world(column_index, row_index):
 	return _axial_to_pixel(column_index, row_index) + grid_origin
 
 func _axial_to_pixel(column_index, row_index):
-	var x = CELL_RADIUS * (1.5 * column_index)
-	var y = CELL_RADIUS * (SQRT3 * row_index + SQRT3 * 0.5 * column_index)
-	return Vector2(x, y)
+        var row_offset = float(row_index % 2) * (SQRT3 * 0.5)
+        var x = CELL_RADIUS * (SQRT3 * column_index + row_offset)
+        var y = CELL_RADIUS * (1.5 * row_index)
+        return Vector2(x, y)
 
 func toggle_grid_lines():
 	show_grid_lines = not show_grid_lines
