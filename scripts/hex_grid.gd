@@ -84,26 +84,18 @@ func _draw():
 			if show_grid_lines:
 				var outline = _build_cell_outline(center)
 				draw_polyline(outline, Color(0.32, 0.40, 0.46), 1.2)
-			if cell["character"] != null:
-				var character_color = Color(0.85, 0.85, 0.35)
-				var character_id = cell["character"]
-				var character = null
-				if character_id != null and characters.has(character_id):
-					character = characters[character_id]
-					if character != null:
-						if character.faction == "player":
-							character_color = Color(0.35, 0.85, 0.45)
-						elif character.faction == "enemy":
-							character_color = Color(0.9, 0.3, 0.3)
-				draw_circle(center, CELL_RADIUS * 0.35, character_color)
-				if character != null and character.is_alive() and character.max_hp > 0:
-					var health_ratio = clamp(float(character.hp) / float(character.max_hp), 0.0, 1.0)
-					var bar_position = center + Vector2(-HEALTH_BAR_WIDTH * 0.5, HEALTH_BAR_OFFSET_Y)
-					var background_rect = Rect2(bar_position, Vector2(HEALTH_BAR_WIDTH, HEALTH_BAR_HEIGHT))
-					draw_rect(background_rect, HEALTH_BAR_BACKGROUND_COLOR)
-					if health_ratio > 0.0:
-						var fill_rect = Rect2(bar_position, Vector2(HEALTH_BAR_WIDTH * health_ratio, HEALTH_BAR_HEIGHT))
-						draw_rect(fill_rect, HEALTH_BAR_FOREGROUND_COLOR)
+                        if cell["character"] != null:
+                                var character_color = Color(0.85, 0.85, 0.35)
+                                var character_id = cell["character"]
+                                var character = null
+                                if character_id != null and characters.has(character_id):
+                                        character = characters[character_id]
+                                        if character != null:
+                                                if character.faction == "player":
+                                                        character_color = Color(0.35, 0.85, 0.45)
+                                                elif character.faction == "enemy":
+                                                        character_color = Color(0.9, 0.3, 0.3)
+                                draw_circle(center, CELL_RADIUS * 0.35, character_color)
 
 func _build_cell_polygon(center):
 	var points = PoolVector2Array()
@@ -300,4 +292,77 @@ func _offset_to_cube(column_index, row_index):
 	return Vector3(x, y, z)
 
 func get_world_position(column_index, row_index):
-	return _axial_to_world(column_index, row_index)
+        return _axial_to_world(column_index, row_index)
+
+func is_cell_walkable(column_index, row_index, ignore_character_id = ""):
+        var cell = get_cell(column_index, row_index)
+        if cell == null:
+                return false
+        if cell["impassable"]:
+                return false
+        var occupant = cell["character"]
+        if occupant != null and occupant != ignore_character_id:
+                return false
+        return true
+
+func find_path(start_column, start_row, goal_column, goal_row, ignore_character_id = "", allow_goal_occupied = false):
+        if not is_in_bounds(start_column, start_row) or not is_in_bounds(goal_column, goal_row):
+                return []
+        var start = _make_grid_key(start_column, start_row)
+        var goal = _make_grid_key(goal_column, goal_row)
+        if start == goal:
+                return [start]
+        var frontier = [start]
+        var came_from = {}
+        came_from[start] = null
+        while frontier.size() > 0:
+                var current = frontier.pop_front()
+                if current == goal:
+                        break
+                for neighbor in get_neighbor_coordinates(current.x, current.y):
+                        var neighbor_key = _make_grid_key(neighbor.x, neighbor.y)
+                        if came_from.has(neighbor_key):
+                                continue
+                        var walkable = is_cell_walkable(neighbor.x, neighbor.y, ignore_character_id)
+                        if not walkable:
+                                if allow_goal_occupied and neighbor_key == goal:
+                                        var goal_cell = get_cell(goal.x, goal.y)
+                                        if goal_cell == null or goal_cell["impassable"]:
+                                                continue
+                                        walkable = true
+                                else:
+                                        continue
+                        if walkable:
+                                came_from[neighbor_key] = current
+                                frontier.append(neighbor_key)
+        if not came_from.has(goal):
+                return []
+        var path = []
+        var current_key = goal
+        while current_key != null:
+                path.insert(0, current_key)
+                current_key = came_from.get(current_key, null)
+        return path
+
+func find_path_to_adjacent(character_id, start_position, target_position):
+        if start_position == null or target_position == null:
+                return []
+        if get_hex_distance(start_position.x, start_position.y, target_position.x, target_position.y) <= 1:
+                return [_make_grid_key(start_position.x, start_position.y)]
+        var best_path = []
+        var best_length = INF
+        for neighbor in get_neighbor_coordinates(target_position.x, target_position.y):
+                if neighbor == start_position:
+                        return [_make_grid_key(start_position.x, start_position.y)]
+                if not is_cell_walkable(neighbor.x, neighbor.y, character_id):
+                        continue
+                var candidate_path = find_path(start_position.x, start_position.y, neighbor.x, neighbor.y, character_id)
+                if candidate_path.empty():
+                        continue
+                if candidate_path.size() < best_length:
+                        best_length = candidate_path.size()
+                        best_path = candidate_path
+        return best_path
+
+func _make_grid_key(column_index, row_index):
+        return Vector2(int(column_index), int(row_index))
