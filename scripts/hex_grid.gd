@@ -5,6 +5,12 @@ const GRID_HEIGHT = 30
 const CELL_RADIUS = 24.0
 const SQRT3 = 1.73205080757
 
+const HEALTH_BAR_WIDTH = CELL_RADIUS * 1.4
+const HEALTH_BAR_HEIGHT = 4.0
+const HEALTH_BAR_OFFSET_Y = CELL_RADIUS * 0.55
+const HEALTH_BAR_BACKGROUND_COLOR = Color(0, 0, 0, 0.75)
+const HEALTH_BAR_FOREGROUND_COLOR = Color(0.25, 0.85, 0.35)
+
 const NEIGHBOR_OFFSETS_EVEN = [
 		Vector2(1, 0),
 		Vector2(0, -1),
@@ -75,19 +81,29 @@ func _draw():
 			elif cell["effects"].size() > 0:
 				base_color = Color(0.20, 0.26, 0.34)
 			draw_colored_polygon(polygon, base_color)
-			if show_grid_lines:
-				var outline = _build_cell_outline(center)
-				draw_polyline(outline, Color(0.32, 0.40, 0.46), 1.2)
-				if cell["character"] != null:
-					var character_color = Color(0.85, 0.85, 0.35)
-					var character_id = cell["character"]
-					if character_id != null and characters.has(character_id):
-							var character = characters[character_id]
-							if character.faction == "player":
-									character_color = Color(0.35, 0.85, 0.45)
-							elif character.faction == "enemy":
-									character_color = Color(0.9, 0.3, 0.3)
-					draw_circle(center, CELL_RADIUS * 0.35, character_color)
+                        if show_grid_lines:
+                                var outline = _build_cell_outline(center)
+                                draw_polyline(outline, Color(0.32, 0.40, 0.46), 1.2)
+                                if cell["character"] != null:
+                                        var character_color = Color(0.85, 0.85, 0.35)
+                                        var character_id = cell["character"]
+                                        var character = null
+                                        if character_id != null and characters.has(character_id):
+                                                        character = characters[character_id]
+                                                        if character != null:
+                                                                        if character.faction == "player":
+                                                                                        character_color = Color(0.35, 0.85, 0.45)
+                                                                        elif character.faction == "enemy":
+                                                                                        character_color = Color(0.9, 0.3, 0.3)
+                                        draw_circle(center, CELL_RADIUS * 0.35, character_color)
+                                        if character != null and character.is_alive() and character.max_hp > 0:
+                                                        var health_ratio = clamp(float(character.hp) / float(character.max_hp), 0.0, 1.0)
+                                                        var bar_position = center + Vector2(-HEALTH_BAR_WIDTH * 0.5, HEALTH_BAR_OFFSET_Y)
+                                                        var background_rect = Rect2(bar_position, Vector2(HEALTH_BAR_WIDTH, HEALTH_BAR_HEIGHT))
+                                                        draw_rect(background_rect, HEALTH_BAR_BACKGROUND_COLOR)
+                                                        if health_ratio > 0.0:
+                                                                        var fill_rect = Rect2(bar_position, Vector2(HEALTH_BAR_WIDTH * health_ratio, HEALTH_BAR_HEIGHT))
+                                                                        draw_rect(fill_rect, HEALTH_BAR_FOREGROUND_COLOR)
 
 func _build_cell_polygon(center):
 	var points = PoolVector2Array()

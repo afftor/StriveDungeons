@@ -136,23 +136,27 @@ func _perform_character_turn(character):
 						_resolve_attack(character, target)
 
 func _resolve_attack(attacker, defender):
-				if defender == null or attacker == null:
-								return
-				var result = attacker.attack(defender)
-				var defender_position = hex_grid.get_character_position(defender.id)
-				if result.hit:
-								var damage_value = int(round(result.damage))
-								if defender_position != null:
+                                if defender == null or attacker == null:
+                                                                return
+                                if not attacker.is_hostile_to(defender):
+                                                                return
+                                var result = attacker.attack(defender)
+                                var defender_position = hex_grid.get_character_position(defender.id)
+                                if result.hit:
+                                                                var damage_value = int(round(result.damage))
+                                                                if defender_position != null:
 												_show_floating_text(defender_position, "-%d" % damage_value, Color(0.9, 0.2, 0.2))
 								_log_combat_event("%s hits %s for %d damage." % [attacker.name, defender.name, damage_value])
 				else:
 								if defender_position != null:
 												_show_floating_text(defender_position, "Dodge!", Color(0.6, 0.8, 1.0))
 								_log_combat_event("%s misses %s." % [attacker.name, defender.name])
-				if result.get("target_defeated", false):
-								hex_grid.remove_character(defender.id)
-								turn_order.erase(defender.id)
-								_log_combat_event("%s is defeated." % defender.name)
+                                if result.get("target_defeated", false):
+                                                                hex_grid.remove_character(defender.id)
+                                                                turn_order.erase(defender.id)
+                                                                _log_combat_event("%s is defeated." % defender.name)
+                                elif result.hit and hex_grid != null:
+                                                                hex_grid.update()
 
 func _cleanup_defeated_characters():
 				for character_id in hex_grid.get_character_ids():
