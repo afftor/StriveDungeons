@@ -8,6 +8,16 @@
 
 config_version=4
 
+_global_script_classes=[ {
+"base": "Reference",
+"class": "Character",
+"language": "GDScript",
+"path": "res://scripts/character.gd"
+} ]
+_global_script_class_icons={
+"Character": ""
+}
+
 [application]
 
 config/name="HexFieldGame"
