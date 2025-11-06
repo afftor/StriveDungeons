@@ -119,7 +119,7 @@ func _perform_character_turn(character):
 	if target == null or target_position == null:
 		return
 	var distance = hex_grid.get_hex_distance(current_position.x, current_position.y, target_position.x, target_position.y)
-	if distance <= 1:
+	if distance <= 1 and not hex_grid.has_wall_between(current_position.x, current_position.y, target_position.x, target_position.y):
 		_resolve_attack(character, target)
 		return
 	var path_to_target = target_info["path"]
@@ -139,7 +139,7 @@ func _perform_character_turn(character):
 	if target_position == null or current_position == null:
 		return
 	var new_distance = hex_grid.get_hex_distance(current_position.x, current_position.y, target_position.x, target_position.y)
-	if new_distance <= 1:
+	if new_distance <= 1 and not hex_grid.has_wall_between(current_position.x, current_position.y, target_position.x, target_position.y):
 		_resolve_attack(character, target)
 
 func _resolve_attack(attacker, defender):
@@ -198,7 +198,10 @@ func _find_nearest_enemy_with_path(character):
 			continue
 		var path = hex_grid.find_path_to_adjacent(character.id, character_position, candidate_position)
 		if path.empty():
-			if hex_grid.get_hex_distance(character_position.x, character_position.y, candidate_position.x, candidate_position.y) > 1:
+			var distance = hex_grid.get_hex_distance(character_position.x, character_position.y, candidate_position.x, candidate_position.y)
+			if distance > 1:
+				continue
+			if hex_grid.has_wall_between(character_position.x, character_position.y, candidate_position.x, candidate_position.y):
 				continue
 			path = [Vector2(int(character_position.x), int(character_position.y))]
 		var moves_required = max(0, path.size() - 1)

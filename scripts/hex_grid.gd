@@ -29,19 +29,53 @@ const NEIGHBOR_OFFSETS_ODD = [
 	Vector2(1, 1)
 ]
 
+const DIRECTION_CUBE_OFFSETS = [
+	Vector3(1, -1, 0),
+	Vector3(1, 0, -1),
+	Vector3(0, 1, -1),
+	Vector3(-1, 1, 0),
+	Vector3(-1, 0, 1),
+	Vector3(0, -1, 1)
+]
+
+const EDGE_CORNER_INDICES = [
+	[5, 0],
+	[0, 1],
+	[1, 2],
+	[2, 3],
+	[3, 4],
+	[4, 5]
+]
+
 var show_grid_lines = true
 var grid_origin = Vector2.ZERO
 var cells = []
 var characters = {}
 var character_positions = {}
+var walls = {}
+
+func _make_wall_key(column_index, row_index):
+	return "%d,%d" % [int(column_index), int(row_index)]
+
+func _parse_wall_key(key):
+	var parts = key.split(",")
+	if parts.size() != 2:
+		return Vector2.ZERO
+	return Vector2(int(parts[0]), int(parts[1]))
+
+func _ensure_wall_entry(key):
+	if not walls.has(key):
+		walls[key] = {}
 
 func _ready():
 	_build_cells()
 	_compute_origin()
+	_spawn_random_walls(15)
 	update()
 
 func _build_cells():
 	cells.clear()
+	walls.clear()
 	for row_index in range(GRID_HEIGHT):
 		var row = []
 		for column_index in range(GRID_WIDTH):
@@ -97,6 +131,7 @@ func _draw():
 					elif character.faction == "enemy":
 						character_color = Color(0.9, 0.3, 0.3)
 			draw_circle(center, CELL_RADIUS * 0.35, character_color)
+	_draw_walls()
 
 func _build_cell_polygon(center):
 	var points = PoolVector2Array()
@@ -174,6 +209,8 @@ func move_character(character_id, new_column, new_row):
 	if not can_place_character(new_column, new_row):
 		return false
 	var current_position = character_positions[character_id]
+	if has_wall_between(current_position.x, current_position.y, new_column, new_row):
+		return false
 	var current_cell = get_cell(current_position.x, current_position.y)
 	var target_cell = get_cell(new_column, new_row)
 	if current_cell == null or target_cell == null:
@@ -278,6 +315,8 @@ func get_step_towards(column_a, row_a, column_b, row_b):
 	var best_step = null
 	var best_distance = current_distance
 	for neighbor in get_neighbor_coordinates(column_a, row_a):
+		if has_wall_between(column_a, row_a, neighbor.x, neighbor.y):
+			continue
 		if is_cell_occupied(neighbor.x, neighbor.y):
 			continue
 		var neighbor_distance = get_hex_distance(neighbor.x, neighbor.y, column_b, row_b)
@@ -322,6 +361,8 @@ func find_path(start_column, start_row, goal_column, goal_row, ignore_character_
 		if current == goal:
 			break
 		for neighbor in get_neighbor_coordinates(current.x, current.y):
+			if has_wall_between(current.x, current.y, neighbor.x, neighbor.y):
+				continue
 			var neighbor_key = _make_grid_key(neighbor.x, neighbor.y)
 			if came_from.has(neighbor_key):
 				continue
@@ -350,10 +391,14 @@ func find_path_to_adjacent(character_id, start_position, target_position):
 	if start_position == null or target_position == null:
 		return []
 	if get_hex_distance(start_position.x, start_position.y, target_position.x, target_position.y) <= 1:
-		return [_make_grid_key(start_position.x, start_position.y)]
+		if not has_wall_between(start_position.x, start_position.y, target_position.x, target_position.y):
+			return [_make_grid_key(start_position.x, start_position.y)]
+		return []
 	var best_path = []
 	var best_length = INF
 	for neighbor in get_neighbor_coordinates(target_position.x, target_position.y):
+		if has_wall_between(target_position.x, target_position.y, neighbor.x, neighbor.y):
+			continue
 		if neighbor == start_position:
 			return [_make_grid_key(start_position.x, start_position.y)]
 		if not is_cell_walkable(neighbor.x, neighbor.y, character_id):
@@ -369,3 +414,100 @@ func find_path_to_adjacent(character_id, start_position, target_position):
 
 func _make_grid_key(column_index, row_index):
 	return Vector2(int(column_index), int(row_index))
+
+func has_wall_between(column_a, row_a, column_b, row_b):
+	var start = _make_grid_key(column_a, row_a)
+	var end = _make_grid_key(column_b, row_b)
+	if start == end:
+		return false
+	var start_key = _make_wall_key(start.x, start.y)
+	var end_key = _make_wall_key(end.x, end.y)
+	if not walls.has(start_key):
+		return false
+	return walls[start_key].has(end_key)
+
+func add_wall_between(column_a, row_a, column_b, row_b):
+	if not is_in_bounds(column_a, row_a) or not is_in_bounds(column_b, row_b):
+		return false
+	var start = _make_grid_key(column_a, row_a)
+	var end = _make_grid_key(column_b, row_b)
+	if start == end:
+		return false
+	if not _are_cells_adjacent(start, end):
+		return false
+	if has_wall_between(column_a, row_a, column_b, row_b):
+		return false
+	var start_key = _make_wall_key(start.x, start.y)
+	var end_key = _make_wall_key(end.x, end.y)
+	_ensure_wall_entry(start_key)
+	_ensure_wall_entry(end_key)
+	walls[start_key][end_key] = true
+	walls[end_key][start_key] = true
+	update()
+	return true
+
+func get_wall_count():
+	var total = 0
+	for key in walls.keys():
+		total += walls[key].size()
+	return int(total / 2)
+
+func _are_cells_adjacent(start, end):
+	for neighbor in get_neighbor_coordinates(start.x, start.y):
+		if neighbor == end:
+			return true
+	return false
+
+func _spawn_random_walls(target_count):
+	var created = 0
+	var attempts = 0
+	var max_attempts = max(1, target_count * 20)
+	while created < target_count and attempts < max_attempts:
+		attempts += 1
+		var column = randi() % GRID_WIDTH
+		var row = randi() % GRID_HEIGHT
+		var neighbors = get_neighbor_coordinates(column, row)
+		if neighbors.empty():
+			continue
+		var neighbor = neighbors[randi() % neighbors.size()]
+		if add_wall_between(column, row, neighbor.x, neighbor.y):
+			created += 1
+
+func _draw_walls():
+	for start_key in walls.keys():
+		var start_position = _parse_wall_key(start_key)
+		var connections = walls[start_key]
+		for end_key in connections.keys():
+			var end_position = _parse_wall_key(end_key)
+			if not _is_primary_wall_key(start_position, end_position):
+				continue
+			var segment = _get_wall_segment(start_position, end_position)
+			if segment == null:
+				continue
+			draw_line(segment[0], segment[1], Color(0.85, 0.85, 0.95), 3.0)
+
+func _is_primary_wall_key(start_key, end_key):
+	if start_key.x < end_key.x:
+		return true
+	if start_key.x > end_key.x:
+		return false
+	return start_key.y <= end_key.y
+
+func _get_wall_segment(start_key, end_key):
+	var direction_index = _get_direction_index(start_key, end_key)
+	if direction_index == -1:
+		return null
+	var center = _axial_to_world(start_key.x, start_key.y)
+	var corner_indices = EDGE_CORNER_INDICES[direction_index]
+	var point_a = center + _hex_corner(corner_indices[0])
+	var point_b = center + _hex_corner(corner_indices[1])
+	return [point_a, point_b]
+
+func _get_direction_index(start_key, end_key):
+	var cube_start = _offset_to_cube(start_key.x, start_key.y)
+	var cube_end = _offset_to_cube(end_key.x, end_key.y)
+	var diff = cube_end - cube_start
+	for index in range(DIRECTION_CUBE_OFFSETS.size()):
+		if diff == DIRECTION_CUBE_OFFSETS[index]:
+			return index
+	return -1
